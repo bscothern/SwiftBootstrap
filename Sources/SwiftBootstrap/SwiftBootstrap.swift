@@ -23,7 +23,7 @@ public enum BootstrapError: Error {
 //MARK: Private
 
 /// A convenient way to access the default file manager
-private static let fileManager = FileManager.default
+private let fileManager = FileManager.default
 
 //MARK: - Funcs
 //MARK: Public

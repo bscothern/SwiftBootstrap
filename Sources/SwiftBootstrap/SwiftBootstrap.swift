@@ -17,6 +17,9 @@ public enum BootstrapError: Error {
     
     /// The executable cannot find `.build/` in the path to it.
     case invalidPath
+    
+    /// The command has failed to execute.
+    case commandFailed(exitCode: Int32)
 }
 
 //MARK: - Properties
@@ -72,8 +75,46 @@ public func moveToSourceRoot() throws {
 }
 
 /// Run a default `swift build` command.
-public func swiftBuild() {
-    _ = shell("swift build", quiet: false)
+///
+/// - Note: Raises a fatal error if the build fails
+public func swiftBuild(quiet: Bool = false) throws {
+    let exitCode = shell("swift build", quiet: quiet)
+    guard exitCode == 0 else {
+        throw BootstrapError.commandFailed(exitCode: exitCode)
+    }
+}
+
+/// Runs a `swift run Bootstrap-[project]` command inside the project checkout.
+public func bootstrap(project: String, quiet: Bool = false) throws {
+    let originalDirectory = fileManager.currentDirectoryPath
+    defer {
+        fileManager.changeCurrentDirectoryPath(originalDirectory)
+    }
+    
+    moveToSourceRoot()
+    fileManager.changeCurrentDirectoryPath(".build/checkouts")
+    let results = try! fileManager.contentsOfDirectory(at: ".", includingPropertiesForKeys: nil)
+    print("Dir Contents: \(results)")
+}
+
+/// Recusivly initializes and updates git submodules.
+///
+/// - Note: Raises a fatal error if the command fails.
+public func gitSubmodules(quiet: Bool = true) throws {
+    let exitCode = shell("git submodule update --init --recursive", quiet: quiet)
+    guard exitCode == 0 else {
+        throw BootstrapError.commandFailed(exitCode: exitCode)
+    }
+}
+
+/// Resolves Swift Package Manager dependencies.
+///
+/// - Note: Raises a fatal error if the command fails.
+public func swiftPackageResolve(quiet: Bool = true) throws {
+    let exitCode = shell("swift package resolve", quiet: quiet)
+    guard exitCode == 0 else {
+        throw BootstrapError.commandFailed(exitCode: exitCode)
+    }
 }
 
 //MARK: Private

@@ -93,7 +93,15 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
     
     try moveToSourceRoot()
     fileManager.changeCurrentDirectoryPath(".build/checkouts")
-    let projectDirectory = (try! fileManager.contentsOfDirectory(at: URL(string: ".")!, includingPropertiesForKeys: nil)).lazy.map { $0.lastPathComponent }.first { $0.hasPrefix(project) }
+    let checkouts = (try! fileManager.contentsOfDirectory(at: URL(string: ".")!, includingPropertiesForKeys: nil))
+    print("checkouts")
+    let projectDirectory = checkouts.lazy.map {
+        print("map: \($0)")
+        $0.lastPathComponent
+    }.first {
+        print("first: \($0)")
+        $0.hasPrefix(project)
+    }
     print("Project Dir: \(projectDirectory)")
 }
 

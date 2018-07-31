@@ -102,7 +102,7 @@ public func swiftBuild(product: String = "", quiet: Bool = false) throws {
 ///     `default = ""`.
 ///   - quiet: When `false` the command will have its output printed to the console and when `true` the command is silent.
 ///     `default = false`.
-public func bootstrap(project: String, quiet: Bool = true) throws {
+public func bootstrap(project: String, quiet: Bool = false) throws {
     let originalDirectory = fileManager.currentDirectoryPath
     defer {
         fileManager.changeCurrentDirectoryPath(originalDirectory)
@@ -120,7 +120,8 @@ public func bootstrap(project: String, quiet: Bool = true) throws {
     }
     fileManager.changeCurrentDirectoryPath(projectDirectory)
 
-    let exitCode = shell("swift run Bootstrap-\(project)")
+    print("=== Bootstrapping \(project) ===")
+    let exitCode = shell("swift run Bootstrap-\(project)", quiet: quiet)
     guard exitCode == 0 else {
         throw BootstrapError.commandFailed(exitCode: exitCode)
     }

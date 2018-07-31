@@ -77,8 +77,8 @@ public func moveToSourceRoot() throws {
 /// Run a default `swift build` command.
 ///
 /// - Note: Raises a fatal error if the build fails
-public func swiftBuild(quiet: Bool = false) throws {
-    let exitCode = shell("swift build", quiet: quiet)
+public func swiftBuild(product: String = "", quiet: Bool = false) throws {
+    let exitCode = shell("swift build \(!target.isEmpty ? "":"--product \(product)")", quiet: quiet)
     guard exitCode == 0 else {
         throw BootstrapError.commandFailed(exitCode: exitCode)
     }
@@ -93,16 +93,14 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
     
     try moveToSourceRoot()
     fileManager.changeCurrentDirectoryPath(".build/checkouts")
-    let checkouts = (try! fileManager.contentsOfDirectory(at: URL(string: ".")!, includingPropertiesForKeys: nil))
-    print("checkouts")
-    let projectDirectory = checkouts.lazy.map {
-        print("map: \($0)")
-        $0.lastPathComponent
-    }.first {
-        print("first: \($0)")
-        $0.hasPrefix(project)
-    }
-    print("Project Dir: \(projectDirectory)")
+    let checkouts = try! fileManager.contentsOfDirectory(at: URL(string: ".")!, includingPropertiesForKeys: nil)
+    let projectDirectory: String? = checkouts.first {
+        $0.lastPathComponent.hasPrefix(project)
+    }?.lastPathComponent
+
+    fileManager.changeCurrentDirectoryPath(projectDirectory)
+
+    try swiftBuild(product: "Bootstrap-\(project)", quiet: quiet)
 }
 
 /// Recusivly initializes and updates git submodules.

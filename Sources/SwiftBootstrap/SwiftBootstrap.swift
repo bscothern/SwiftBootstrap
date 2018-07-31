@@ -15,8 +15,11 @@ public enum BootstrapError: Error {
     /// Raised when the `FileManager` fails to change directories
     case directoryChangeFailure
     
-    /// The executable cannot find `.build/` in the path to it.
+    /// The bootstrap executable cannot find `.build/` in it's file path.
     case invalidPath
+    
+    /// The bootstrap executable cannot find a directory it should change into.
+    case directoryNotFound
     
     /// The command has failed to execute.
     case commandFailed(exitCode: Int32)
@@ -53,7 +56,7 @@ public func shell(_ command: String, quiet: Bool = true) -> Int32 {
 
 /// Moves the the `FileManager` for the executable to the root of the current source directory.
 ///
-/// - Throws: A `Bootstrap.Error` describing what has gone wrong while modifying the `FileManager`.
+/// - Throws: A `BootstrapError` describing what has gone wrong.
 public func moveToSourceRoot() throws {
     let pathToThisApp = CommandLine.arguments.first!
     let directoryOfThisApp = String(pathToThisApp.lazy.reversed().split(separator: "/", maxSplits: 1).last!.reversed())
@@ -76,7 +79,13 @@ public func moveToSourceRoot() throws {
 
 /// Run a default `swift build` command.
 ///
-/// - Note: Raises a fatal error if the build fails
+/// - Throws: A `BootstrapError` describing what has gone wrong.
+///
+/// - Parameters:
+///   - product: A product to build.
+///     `default = ""`.
+///   - quiet: When `false` the command will have its output printed to the console and when `true` the command is silent.
+///     `default = false`.
 public func swiftBuild(product: String = "", quiet: Bool = false) throws {
     let exitCode = shell("swift build \(!product.isEmpty ? "":"--product \(product)")", quiet: quiet)
     guard exitCode == 0 else {
@@ -85,6 +94,14 @@ public func swiftBuild(product: String = "", quiet: Bool = false) throws {
 }
 
 /// Runs a `swift run Bootstrap-[project]` command inside the project checkout.
+///
+/// - Throws: A `BootstrapError` describing what has gone wrong.
+///
+/// - Parameters:
+///   - product: A product to build.
+///     `default = ""`.
+///   - quiet: When `false` the command will have its output printed to the console and when `true` the command is silent.
+///     `default = false`.
 public func bootstrap(project: String, quiet: Bool = true) throws {
     let originalDirectory = fileManager.currentDirectoryPath
     defer {
@@ -94,13 +111,13 @@ public func bootstrap(project: String, quiet: Bool = true) throws {
     try moveToSourceRoot()
     fileManager.changeCurrentDirectoryPath(".build/checkouts")
     let checkouts = try! fileManager.contentsOfDirectory(at: URL(string: ".")!, includingPropertiesForKeys: nil)
+
     guard let projectDirectory = checkouts.first(where: {
             $0.lastPathComponent.hasPrefix(project)
         })?.lastPathComponent
         else {
-            throw BootstrapError.directoryChangeFailure
+            throw BootstrapError.directoryNotFound
     }
-
     fileManager.changeCurrentDirectoryPath(projectDirectory)
 
     let exitCode = shell("swift run Bootstrap-\(project)")
@@ -111,7 +128,11 @@ public func bootstrap(project: String, quiet: Bool = true) throws {
 
 /// Recusivly initializes and updates git submodules.
 ///
-/// - Note: Raises a fatal error if the command fails.
+/// - Throws: A `BootstrapError` describing what has gone wrong.
+///
+/// - Parameters:
+///   - quiet: When `false` the command will have its output printed to the console and when `true` the command is silent.
+///     `default = false`.
 public func gitSubmodules(quiet: Bool = true) throws {
     let exitCode = shell("git submodule update --init --recursive", quiet: quiet)
     guard exitCode == 0 else {
@@ -121,7 +142,11 @@ public func gitSubmodules(quiet: Bool = true) throws {
 
 /// Resolves Swift Package Manager dependencies.
 ///
-/// - Note: Raises a fatal error if the command fails.
+/// - Throws: A `BootstrapError` describing what has gone wrong.
+///
+/// - Parameters:
+///   - quiet: When `false` the command will have its output printed to the console and when `true` the command is silent.
+///     `default = false`.
 public func swiftPackageResolve(quiet: Bool = true) throws {
     let exitCode = shell("swift package resolve", quiet: quiet)
     guard exitCode == 0 else {

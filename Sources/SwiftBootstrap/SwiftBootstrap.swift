@@ -100,7 +100,7 @@ public func swiftBuild(product: String = "", quiet: Bool = false) throws {
 /// - Parameters:
 ///   - product: A product to build.
 ///     `default = ""`.
-///   - quiet: When `false` the command will have its output printed to the console and when `true` the command is silent.
+///   - quiet: When `false` the command will have its subcommands output printed to the console and when `true` the command is silent.
 ///     `default = false`.
 public func bootstrap(project: String, quiet: Bool = false) throws {
     let originalDirectory = fileManager.currentDirectoryPath
@@ -125,6 +125,7 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
     guard exitCode == 0 else {
         throw BootstrapError.commandFailed(exitCode: exitCode)
     }
+    print("=== Finished Bootstrapping \(project) ===")
 }
 
 /// Recusivly initializes and updates git submodules.

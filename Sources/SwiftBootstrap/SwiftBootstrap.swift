@@ -78,14 +78,14 @@ public func moveToSourceRoot() throws {
 ///
 /// - Note: Raises a fatal error if the build fails
 public func swiftBuild(product: String = "", quiet: Bool = false) throws {
-    let exitCode = shell("swift build \(!target.isEmpty ? "":"--product \(product)")", quiet: quiet)
+    let exitCode = shell("swift build \(!product.isEmpty ? "":"--product \(product)")", quiet: quiet)
     guard exitCode == 0 else {
         throw BootstrapError.commandFailed(exitCode: exitCode)
     }
 }
 
 /// Runs a `swift run Bootstrap-[project]` command inside the project checkout.
-public func bootstrap(project: String, quiet: Bool = false) throws {
+public func bootstrap(project: String, quiet: Bool = true) throws {
     let originalDirectory = fileManager.currentDirectoryPath
     defer {
         fileManager.changeCurrentDirectoryPath(originalDirectory)
@@ -94,13 +94,19 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
     try moveToSourceRoot()
     fileManager.changeCurrentDirectoryPath(".build/checkouts")
     let checkouts = try! fileManager.contentsOfDirectory(at: URL(string: ".")!, includingPropertiesForKeys: nil)
-    let projectDirectory: String? = checkouts.first {
-        $0.lastPathComponent.hasPrefix(project)
-    }?.lastPathComponent
+    guard let projectDirectory = checkouts.first(where: {
+            $0.lastPathComponent.hasPrefix(project)
+        })?.lastPathComponent
+        else {
+            throw BootstrapError.directoryChangeFailure
+    }
 
     fileManager.changeCurrentDirectoryPath(projectDirectory)
 
-    try swiftBuild(product: "Bootstrap-\(project)", quiet: quiet)
+    let exitCode = shell("swift run Bootstrap-\(project)")
+    guard exitCode == 0 else {
+        throw BootstrapError.commandFailed(exitCode: exitCode)
+    }
 }
 
 /// Recusivly initializes and updates git submodules.

@@ -87,7 +87,7 @@ public func moveToSourceRoot() throws {
 ///   - quiet: When `false` the command will have its output printed to the console and when `true` the command is silent.
 ///     `default = false`.
 public func swiftBuild(product: String = "", quiet: Bool = false) throws {
-    let exitCode = shell("swift build \(!product.isEmpty ? "":"--product \(product)")", quiet: quiet)
+    let exitCode = shell("swift build \(product.isEmpty ? "":"--product \(product)")", quiet: quiet)
     guard exitCode == 0 else {
         throw BootstrapError.commandFailed(exitCode: exitCode)
     }

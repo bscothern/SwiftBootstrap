@@ -93,8 +93,8 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
     
     try moveToSourceRoot()
     fileManager.changeCurrentDirectoryPath(".build/checkouts")
-    let checkouts = (try! fileManager.contentsOfDirectory(at: URL(string: ".")!, includingPropertiesForKeys: nil)).map { $0.path }
-    print("Dir Contents: \(checkouts)")
+    let projectDirectory = (try! fileManager.contentsOfDirectory(at: URL(string: ".")!, includingPropertiesForKeys: nil)).lazy.map { $0.lastPathComponent }.first { $0.hasPrefix(project) }
+    print("Project Dir: \(projectDirectory)")
 }
 
 /// Recusivly initializes and updates git submodules.

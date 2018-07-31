@@ -93,8 +93,8 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
     
     try moveToSourceRoot()
     fileManager.changeCurrentDirectoryPath(".build/checkouts")
-    let results = try! fileManager.contentsOfDirectory(at: URL(string: ".")!, includingPropertiesForKeys: nil)
-    print("Dir Contents: \(results)")
+    let checkouts = (try! fileManager.contentsOfDirectory(at: URL(string: ".")!, includingPropertiesForKeys: nil)).map { $0.path }
+    print("Dir Contents: \(checkouts)")
 }
 
 /// Recusivly initializes and updates git submodules.

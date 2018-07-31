@@ -91,9 +91,9 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
         fileManager.changeCurrentDirectoryPath(originalDirectory)
     }
     
-    moveToSourceRoot()
+    try moveToSourceRoot()
     fileManager.changeCurrentDirectoryPath(".build/checkouts")
-    let results = try! fileManager.contentsOfDirectory(at: ".", includingPropertiesForKeys: nil)
+    let results = try! fileManager.contentsOfDirectory(at: URL(string: ".")!, includingPropertiesForKeys: nil)
     print("Dir Contents: \(results)")
 }
 

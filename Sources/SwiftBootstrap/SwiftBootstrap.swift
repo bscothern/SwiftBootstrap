@@ -112,7 +112,8 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
         try moveTo(project: project, inPath: ".build/checkouts")
     }
     catch {
-        fileManager.changeCurrentDirectoryPath(project)
+        print("\(project) not found in .build/checkouts. Looking in root directory.")
+        try moveTo(project: project, inPath: ".")
     }
 
     print("=== Bootstrapping \(project) ===")
@@ -169,10 +170,7 @@ private func directoryPopPath(count: Int) -> String {
 }
 
 private func moveTo(project: String, inPath path: String) throws {
-    print("In \(#function)")
-    print("project: \(project), path: \(path), currentDir: \(fileManager.currentDirectoryPath)")
     let checkouts = try? fileManager.contentsOfDirectory(at: URL(string: path)!, includingPropertiesForKeys: nil)
-    print(checkouts)
     guard let projectDirectory = checkouts?.first(where: {
         $0.lastPathComponent.hasPrefix(project)
     })?.lastPathComponent

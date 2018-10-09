@@ -169,6 +169,7 @@ private func directoryPopPath(count: Int) -> String {
 }
 
 private func moveTo(project: String, inPath path: String) throws {
+    print("In \(#function)")
     let checkouts = try? fileManager.contentsOfDirectory(at: URL(string: path)!, includingPropertiesForKeys: nil)
     guard let projectDirectory = checkouts?.first(where: {
         $0.lastPathComponent.hasPrefix(project)

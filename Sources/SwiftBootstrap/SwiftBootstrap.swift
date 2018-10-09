@@ -112,7 +112,7 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
         try moveTo(project: project, inPath: ".build/checkouts")
     }
     catch {
-        try! moveTo(project: project, inPath: project)
+        fileManager.changeCurrentDirectoryPath(project)
     }
 
     print("=== Bootstrapping \(project) ===")

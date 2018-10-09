@@ -98,8 +98,7 @@ public func swiftBuild(product: String = "", quiet: Bool = false) throws {
 /// - Throws: A `BootstrapError` describing what has gone wrong.
 ///
 /// - Parameters:
-///   - product: A product to build.
-///     `default = ""`.
+///   - project: The project found in `.build/checkouts` to build.
 ///   - quiet: When `false` the command will have its subcommands output printed to the console and when `true` the command is silent.
 ///     `default = false`.
 public func bootstrap(project: String, quiet: Bool = false) throws {
@@ -109,16 +108,12 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
     }
     
     try moveToSourceRoot()
-    fileManager.changeCurrentDirectoryPath(".build/checkouts")
-    let checkouts = try! fileManager.contentsOfDirectory(at: URL(string: ".")!, includingPropertiesForKeys: nil)
-
-    guard let projectDirectory = checkouts.first(where: {
-            $0.lastPathComponent.hasPrefix(project)
-        })?.lastPathComponent
-        else {
-            throw BootstrapError.directoryNotFound
+    do {
+        try moveTo(project: project, inPath: ".build/checkouts")
     }
-    fileManager.changeCurrentDirectoryPath(projectDirectory)
+    catch {
+        try! moveTo(project: project, inPath: "project")
+    }
 
     print("=== Bootstrapping \(project) ===")
     let exitCode = shell("swift run Bootstrap-\(project)", quiet: quiet)
@@ -173,3 +168,14 @@ private func directoryPopPath(count: Int) -> String {
     return toReturn
 }
 
+private func moveTo(project: String, inPath path: String) throws {
+    let checkouts = try? fileManager.contentsOfDirectory(at: URL(string: path)!, includingPropertiesForKeys: nil)
+    guard let projectDirectory = checkouts?.first(where: {
+        $0.lastPathComponent.hasPrefix(project)
+    })?.lastPathComponent
+        else {
+            throw BootstrapError.directoryNotFound
+    }
+    fileManager.changeCurrentDirectoryPath(path)
+    fileManager.changeCurrentDirectoryPath(projectDirectory)
+}

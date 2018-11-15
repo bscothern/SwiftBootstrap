@@ -103,15 +103,15 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
     defer {
         fileManager.changeCurrentDirectoryPath(originalDirectory)
     }
-    
+
     try moveToSourceRoot()
-    do {
-        try moveTo(project: project, inPath: ".build/checkouts")
-    }
-    catch {
-        print("\(project) not found in .build/checkouts. Looking in root directory.")
-        try moveTo(project: project, inPath: ".")
-    }
+//    do {
+//        try moveTo(project: project, inPath: ".build/checkouts")
+//    }
+//    catch {
+//        print("\(project) not found in .build/checkouts. Looking in root directory.")
+//        try moveTo(project: project, inPath: ".")
+//    }
 
     print("=== Bootstrapping \(project) ===")
     let exitCode = shell("swift run Bootstrap-\(project)", quiet: quiet)

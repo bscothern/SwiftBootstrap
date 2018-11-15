@@ -40,8 +40,11 @@ public func shell(_ command: String, quiet: Bool = true) -> Int32 {
     process.launchPath = "/usr/bin/env"
     process.arguments = command.lazy.split(separator: " ").map { String($0) }
     if quiet {
+#if !os(Linux)
+        // For some reason this is crashing on arm64 Linux...
         process.standardOutput = nil
         process.standardError = nil
+#endif
     }
     process.launch()
     process.waitUntilExit()

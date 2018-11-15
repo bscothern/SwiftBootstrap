@@ -51,13 +51,27 @@ public func shell(_ command: String, quiet: Bool = true) -> Int32 {
     return process.terminationStatus
 }
 
-/// Moves the the `FileManager` for the executable to the root of the current source directory.
+/// Moves the `FileManager` to the absolute source root relative to the first `.build/` in the current path.
 ///
 /// - Throws: A `BootstrapError` describing what has gone wrong.
 public func moveToSourceRoot() throws {
+    guard let sourceRoot = fileManager.currentDirectoryPath.components(separatedBy: ".build/").first,
+        !sourceRoot.isEmpty
+        else {
+            throw BootstrapError.invalidPath
+    }
+
+    guard fileManager.changeCurrentDirectoryPath(sourceRoot) else {
+        throw BootstrapError.directoryChangeFailure
+    }
+}
+
+/// Moves the '`FileManager` to the current executable's source directory.
+///
+/// - Throws: A `BootstrapError` describing what has gone wrong.
+public func moveToExecutableSourceRoot() throws {
     let pathToThisApp = CommandLine.arguments.first!
     let directoryOfThisApp = String(pathToThisApp.lazy.reversed().split(separator: "/", maxSplits: 1).last!.reversed())
-    
     let components = directoryOfThisApp.components(separatedBy: ".build/")
     guard components.count > 1 else {
         throw BootstrapError.invalidPath
@@ -66,8 +80,8 @@ public func moveToSourceRoot() throws {
     guard fileManager.changeCurrentDirectoryPath(directoryOfThisApp) else {
         throw BootstrapError.directoryChangeFailure
     }
-    
-    let pathFromBuild = components.last!
+
+    let pathFromBuild = components.dropFirst().joined(separator: "")
     let popsToRootDirectory = pathFromBuild.split(separator: "/").count + 1 // Adding 1 to get out of .build/
     guard fileManager.changeCurrentDirectoryPath(directoryPopPath(count: popsToRootDirectory)) else {
         throw BootstrapError.directoryChangeFailure
@@ -105,13 +119,13 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
     }
 
     try moveToSourceRoot()
-//    do {
-//        try moveTo(project: project, inPath: ".build/checkouts")
-//    }
-//    catch {
-//        print("\(project) not found in .build/checkouts. Looking in root directory.")
-//        try moveTo(project: project, inPath: ".")
-//    }
+    do {
+        try moveTo(project: project, inPath: ".build/checkouts")
+    }
+    catch {
+        print("\(project) not found in .build/checkouts. Looking in root directory.")
+        try moveTo(project: project, inPath: ".")
+    }
 
     print("=== Bootstrapping \(project) ===")
     let exitCode = shell("swift run Bootstrap-\(project)", quiet: quiet)

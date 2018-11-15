@@ -1,11 +1,5 @@
 import Foundation
 
-#if os(macOS)
-private typealias Runner = Process
-#elseif os(Linux)
-private typealias Runner = Task
-#endif
-
 //MARK: - Types
 //MARK: Public
 
@@ -42,16 +36,16 @@ private let fileManager = FileManager.default
 ///         When `false` the default standard out and standard error are used.
 /// - Returns: The termination status of the shell command
 public func shell(_ command: String, quiet: Bool = true) -> Int32 {
-    let task = Runner()
-    task.launchPath = "/usr/bin/env"
-    task.arguments = command.lazy.split(separator: " ").map { String($0) }
+    let process = Process()
+    process.launchPath = "/usr/bin/env"
+    process.arguments = command.lazy.split(separator: " ").map { String($0) }
     if quiet {
-        task.standardOutput = nil
-        task.standardError = nil
+        process.standardOutput = nil
+        process.standardError = nil
     }
-    task.launch()
-    task.waitUntilExit()
-    return task.terminationStatus
+    process.launch()
+    process.waitUntilExit()
+    return process.terminationStatus
 }
 
 /// Moves the the `FileManager` for the executable to the root of the current source directory.

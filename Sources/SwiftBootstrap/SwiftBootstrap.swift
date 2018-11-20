@@ -19,6 +19,10 @@ public enum BootstrapError: Error {
     case commandFailed(exitCode: Int32)
 }
 
+public enum Options {
+    public static let disableBuild: String = "_DisableBuild"
+}
+
 //MARK: - Properties
 //MARK: Private
 
@@ -98,6 +102,8 @@ public func moveToExecutableSourceRoot() throws {
 ///   - quiet: When `false` the command will have its output printed to the console and when `true` the command is silent.
 ///     `default = false`.
 public func swiftBuild(product: String = "", args: String = "", quiet: Bool = false) throws {
+    guard !CommandLine.arguments.contains(Options.disableBuild) else { return }
+
     let exitCode = shell("swift build \(product.isEmpty ? "":"--product \(product)") \(args.isEmpty ? "":args)", quiet: quiet)
     guard exitCode == 0 else {
         throw BootstrapError.commandFailed(exitCode: exitCode)
@@ -112,7 +118,7 @@ public func swiftBuild(product: String = "", args: String = "", quiet: Bool = fa
 ///   - project: The project found in `.build/checkouts` to build.
 ///   - quiet: When `false` the command will have its subcommands output printed to the console and when `true` the command is silent.
 ///     `default = false`.
-public func bootstrap(project: String, quiet: Bool = false) throws {
+public func bootstrap(project: String, quiet: Bool = false, args: [String]) throws {
     let originalDirectory = fileManager.currentDirectoryPath
     defer {
         fileManager.changeCurrentDirectoryPath(originalDirectory)
@@ -128,7 +134,7 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
     }
 
     print("=== Bootstrapping \(project) ===")
-    let exitCode = shell("swift run Bootstrap-\(project)", quiet: quiet)
+    let exitCode = shell("swift run Bootstrap-\(project) \(args.isEmpty ? "":args.joined(separator: " "))", quiet: quiet)
     guard exitCode == 0 else {
         throw BootstrapError.commandFailed(exitCode: exitCode)
     }

@@ -19,6 +19,10 @@ public enum BootstrapError: Error {
     case commandFailed(exitCode: Int32)
 }
 
+public enum Options {
+    public static let disableBuild: String = "_DisableBuild"
+}
+
 //MARK: - Properties
 //MARK: Private
 
@@ -51,13 +55,27 @@ public func shell(_ command: String, quiet: Bool = true) -> Int32 {
     return process.terminationStatus
 }
 
-/// Moves the the `FileManager` for the executable to the root of the current source directory.
+/// Moves the `FileManager` to the absolute source root relative to the first `.build/` in the current path.
 ///
 /// - Throws: A `BootstrapError` describing what has gone wrong.
 public func moveToSourceRoot() throws {
+    guard let sourceRoot = fileManager.currentDirectoryPath.components(separatedBy: ".build/").first,
+        !sourceRoot.isEmpty
+        else {
+            throw BootstrapError.invalidPath
+    }
+
+    guard fileManager.changeCurrentDirectoryPath(sourceRoot) else {
+        throw BootstrapError.directoryChangeFailure
+    }
+}
+
+/// Moves the '`FileManager` to the current executable's source directory.
+///
+/// - Throws: A `BootstrapError` describing what has gone wrong.
+public func moveToExecutableSourceRoot() throws {
     let pathToThisApp = CommandLine.arguments.first!
     let directoryOfThisApp = String(pathToThisApp.lazy.reversed().split(separator: "/", maxSplits: 1).last!.reversed())
-    
     let components = directoryOfThisApp.components(separatedBy: ".build/")
     guard components.count > 1 else {
         throw BootstrapError.invalidPath
@@ -66,8 +84,8 @@ public func moveToSourceRoot() throws {
     guard fileManager.changeCurrentDirectoryPath(directoryOfThisApp) else {
         throw BootstrapError.directoryChangeFailure
     }
-    
-    let pathFromBuild = components.last!
+
+    let pathFromBuild = components.dropFirst().joined(separator: "")
     let popsToRootDirectory = pathFromBuild.split(separator: "/").count + 1 // Adding 1 to get out of .build/
     guard fileManager.changeCurrentDirectoryPath(directoryPopPath(count: popsToRootDirectory)) else {
         throw BootstrapError.directoryChangeFailure
@@ -84,6 +102,8 @@ public func moveToSourceRoot() throws {
 ///   - quiet: When `false` the command will have its output printed to the console and when `true` the command is silent.
 ///     `default = false`.
 public func swiftBuild(product: String = "", args: String = "", quiet: Bool = false) throws {
+    guard !CommandLine.arguments.contains(Options.disableBuild) else { return }
+
     let exitCode = shell("swift build \(product.isEmpty ? "":"--product \(product)") \(args.isEmpty ? "":args)", quiet: quiet)
     guard exitCode == 0 else {
         throw BootstrapError.commandFailed(exitCode: exitCode)
@@ -98,12 +118,12 @@ public func swiftBuild(product: String = "", args: String = "", quiet: Bool = fa
 ///   - project: The project found in `.build/checkouts` to build.
 ///   - quiet: When `false` the command will have its subcommands output printed to the console and when `true` the command is silent.
 ///     `default = false`.
-public func bootstrap(project: String, quiet: Bool = false) throws {
+public func bootstrap(project: String, quiet: Bool = false, args: [String] = [Options.disableBuild]) throws {
     let originalDirectory = fileManager.currentDirectoryPath
     defer {
         fileManager.changeCurrentDirectoryPath(originalDirectory)
     }
-    
+
     try moveToSourceRoot()
     do {
         try moveTo(project: project, inPath: ".build/checkouts")
@@ -114,7 +134,7 @@ public func bootstrap(project: String, quiet: Bool = false) throws {
     }
 
     print("=== Bootstrapping \(project) ===")
-    let exitCode = shell("swift run Bootstrap-\(project)", quiet: quiet)
+    let exitCode = shell("swift run Bootstrap-\(project) \(args.isEmpty ? "":args.joined(separator: " "))", quiet: quiet)
     guard exitCode == 0 else {
         throw BootstrapError.commandFailed(exitCode: exitCode)
     }

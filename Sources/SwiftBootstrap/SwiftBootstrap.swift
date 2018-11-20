@@ -118,7 +118,7 @@ public func swiftBuild(product: String = "", args: String = "", quiet: Bool = fa
 ///   - project: The project found in `.build/checkouts` to build.
 ///   - quiet: When `false` the command will have its subcommands output printed to the console and when `true` the command is silent.
 ///     `default = false`.
-public func bootstrap(project: String, quiet: Bool = false, args: [String]) throws {
+public func bootstrap(project: String, quiet: Bool = false, args: [String] = [Options.disableBuild]) throws {
     let originalDirectory = fileManager.currentDirectoryPath
     defer {
         fileManager.changeCurrentDirectoryPath(originalDirectory)
